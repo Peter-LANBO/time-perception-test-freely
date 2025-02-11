@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>サークルテスト（自由手描版）</title>
+  <style>
+    body { margin: 0; padding: 20px; font-family: "Hiragino Kaku Gothic Pro", sans-serif; background: #f0f0f0; }
+    .container { width: 95%; max-width: 1200px; margin: 20px auto; background: #fff; padding: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    h2 { margin-top: 0; color: #2c3e50; }
+    .btn { display: inline-block; padding: 10px 25px; margin: 10px 5px; border: none; background: #3498db; color: #fff; cursor: pointer; border-radius: 5px; font-size: 15px; transition: background 0.3s; }
+    .btn:hover { background: #2980b9; }
+    .canvas-box { border: 1px solid #ddd; margin: 15px 0; position: relative; background: #fff; }
+    .step { display: none; }
+    .step.active { display: block; }
+    canvas { background: #fff; cursor: crosshair; }
+    .note { background: #f8f9fa; padding: 15px; margin: 15px 0; border-left: 4px solid #3498db; border-radius: 4px; }
+    .control-panel { margin: 25px 0; display: flex; gap: 15px; align-items: center; }
+    select, button { padding: 9px 18px; border: 1px solid #3498db; border-radius: 5px; background: #3498db; color: white; cursor: pointer; font-size: 15px; }
+    .a4-sheet { display: flex; gap: 30px; margin-top: 25px; }
+    .instruction-panel { flex: 1; min-width: 300px; padding-right: 30px; }
+    .draw-container { width: 800px; height: 800px; border: 2px solid #2c3e50; position: relative; background: #fff; }
+    .canvas-label-outside { font-size: 14px; color: #ccc; margin-bottom: 5px; }
+    #circleCanvas { width: 100%; height: 100%; }
+    .counter { color: #7f8c8d; font-size: 14px; }
+    .fullscreen-prompt { text-align: center; padding: 50px; }
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; }
+    .modal-content { background: #fff; padding: 20px 30px; border-radius: 8px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    .modal-content p { margin-bottom: 20px; font-size: 16px; color: #2c3e50; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Step 0: フルスクリーン説明 -->
+    <div id="step0" class="step active">
+      <div class="fullscreen-prompt">
+        <h2>実験説明</h2>
+        <p>この実験は正確な計測が必要なため、フルスクリーンモードで実施してください</p>
+        <button class="btn" onclick="enterFullscreen()">フルスクリーンで開始</button>
+      </div>
+    </div>
+    <!-- Step 1: キャリブレーション -->
+    <div id="step1" class="step">
+      <div class="note">
+        <label>
+          <input type="checkbox" id="rulerCheck" required> 定規を準備しました（キャリブレーション用）
+        </label>
+      </div>
+      <h2>【ステップ1】2cmキャリブレーション（1回目）</h2>
+      <p>定規を画面に当て、下のキャンバスに<mark>2cmの直線</mark>を描いてください</p>
+      <div class="canvas-box">
+        <canvas id="calibCanvas1" width="800" height="500"></canvas>
+      </div>
+      <button class="btn" id="clearCalib1">リセット</button>
+      <button class="btn" id="confirmCalib1">確定</button>
+    </div>
+    <!-- Step 2: キャリブレーション -->
+    <div id="step2" class="step">
+      <h2>【ステップ2】2cmキャリブレーション（2回目）</h2>
+      <p class="note">2回の計測値の一致度が95%以上必要です</p>
+      <div class="canvas-box">
+        <canvas id="calibCanvas2" width="800" height="500"></canvas>
+      </div>
+      <!-- リセット時、2回目は1回目に戻る -->
+      <button class="btn" id="clearCalib2">リセット（1回目に戻る）</button>
+      <button class="btn" id="confirmCalib2">確定</button>
+    </div>
+    <!-- Step 3: 自由手描サークルテスト -->
+    <div id="step3" class="step">
+      <h2>【ステップ3】サークルテスト（自由手描）</h2>
+      <div class="a4-sheet">
+        <div class="instruction-panel">
+          <!-- 修改后的说明文字 -->
+          <p>
+            以下の指示を詳しく読んで、回答してください：<br>
+            過去、現在、未来が円で表されると考えて、あなた自身の過去、現在、未来の関係について、あなたの見方を最もあらわすように、枠の中で自由に3つの円を書いてください。描き方は自由です。円のサイズと位置を変えてもかまいません。<br>
+            描き終わったら、円をクリックして過去、現在、未来か分かるようにしてください。
+          </p>
+          <div class="note">
+            <strong>操作ガイド</strong>
+            <ul>
+              <li>ラベル選択後、キャンバス上で自由に描画（最大3つ）</li>
+              <li>図形内部を長押ししながらドラッグ：位置移動</li>
+              <li>図形内部を右クリック：その図形を消去し、再描画が可能です</li>
+              <li>※ 円をクリックすると、ラベルの表示/非表示が切り替わります</li>
+            </ul>
+          </div>
+          <div class="control-panel">
+            <select id="labelSelector">
+              <option value="">ラベルを選択</option>
+              <option value="過去">過去</option>
+              <option value="現在">現在</option>
+              <option value="未来">未来</option>
+            </select>
+            <span class="counter" id="circleCounter">作成済み：0/3</span>
+          </div>
+          <div class="control-panel">
+            <button class="btn" onclick="handleExport()">結果出力</button>
+            <button class="btn" onclick="resetCircleCanvas()">リセット</button>
+          </div>
+          <!-- 修改后的结果输出说明 -->
+          <p style="font-size: 15px; color: #2c3e50; margin-top: 15px;">
+            ※ 結果出力について：図の作成が完了したら、左下の【結果出力】ボタンをクリックしてください。<br>
+            すると、<strong>CSVファイルとJPG画像の2つのファイルがダウンロード</strong>されます。<br>
+            ダウンロードされたファイルは、必ず<strong>メール本文に学生番号の後8桁</strong>を記入の上、<br>
+            指定のメールアドレス <strong>wohanhailong1993@outlook.com へ送信</strong>してください。
+          </p>
+        </div>
+        <div>
+          <div class="canvas-label-outside">キャンバス</div>
+          <div class="draw-container">
+            <canvas id="circleCanvas"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="modalOverlay" class="modal-overlay">
+    <div class="modal-content">
+      <p id="modalMessage"></p>
+      <button id="modalOk" class="btn">OK</button>
+      <button id="modalCancel" class="btn" style="display: none;">キャンセル</button>
+    </div>
+  </div>
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+  <script>
+    /****************** 共通変数 ******************/
+    let currentStep = 0;
+    let calibResults = [null, null];
+    let pxToMm = 0;
+    let shapes = []; // 自由手描図形の配列
+    let currentLabel = '';
+    let selectedShape = null;
+    const CANVAS_SIZE = 800;
+    let updateShapeDisplay = null;
+    let circleTestStartTime = 0;
+    let isDrawing = false;
+    let currentShape = null;
+    let actionType = null;
+    let mouseDownPos = null;
+    // 记录下拉菜单选择标签的时间（用于计算反応時間）
+    let labelSelectionTime = 0;
+
+    /****************** 補助関数 ******************/
+    // 多角形の面積（shoelace formula）
+    function computePolygonArea(points) {
+      let area = 0;
+      const n = points.length;
+      for (let i = 0; i < n; i++) {
+        const j = (i + 1) % n;
+        area += points[i].x * points[j].y - points[j].x * points[i].y;
+      }
+      return Math.abs(area) / 2;
+    }
+    // 计算外接矩形
+    function computeBoundingBox(points) {
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      points.forEach(p => {
+        if (p.x < minX) minX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y > maxY) maxY = p.y;
+      });
+      return { minX, minY, maxX, maxY, width: maxX - minX, height: maxY - minY };
+    }
+    // 点が多角形内にあるか（ray-casting法）
+    function isPointInPolygon(point, points) {
+      let pts = points;
+      if (points.length > 2) {
+        const first = points[0], last = points[points.length - 1];
+        if (Math.hypot(first.x - last.x, first.y - last.y) > 5) {
+          pts = points.concat([{ x: first.x, y: first.y }]);
+        }
+      }
+      let inside = false;
+      const n = pts.length;
+      for (let i = 0, j = n - 1; i < n; j = i++) {
+        if (((pts[i].y > point.y) !== (pts[j].y > point.y)) &&
+            (point.x < (pts[j].x - pts[i].x) * (point.y - pts[i].y) / (pts[j].y - pts[i].y) + pts[i].x)) {
+          inside = !inside;
+        }
+      }
+      return inside;
+    }
+    // 点と線分間の距離
+    function distancePointToSegment(p, v, w) {
+      const l2 = (w.x - v.x) ** 2 + (w.y - v.y) ** 2;
+      if (l2 === 0) return Math.hypot(p.x - v.x, p.y - v.y);
+      let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+      t = Math.max(0, Math.min(1, t));
+      const proj = { x: v.x + t * (w.x - v.x), y: v.y + t * (w.y - v.y) };
+      return Math.hypot(p.x - proj.x, p.y - proj.y);
+    }
+
+    /****************** モーダルウィンドウ ******************/
+    function showModal(message, options = { confirmOnly: true }) {
+      return new Promise(resolve => {
+        const modalOverlay = document.getElementById('modalOverlay');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalOk = document.getElementById('modalOk');
+        const modalCancel = document.getElementById('modalCancel');
+        modalMessage.textContent = message;
+        modalOverlay.style.display = 'flex';
+        if (options.confirmOnly) {
+          modalCancel.style.display = 'none';
+        } else {
+          modalCancel.style.display = 'inline-block';
+        }
+        modalOk.onclick = () => {
+          modalOverlay.style.display = 'none';
+          resolve(true);
+        };
+        modalCancel.onclick = () => {
+          modalOverlay.style.display = 'none';
+          resolve(false);
+        };
+      });
+    }
+    async function customAlert(message) {
+      await showModal(message, { confirmOnly: true });
+    }
+    async function customConfirm(message) {
+      return await showModal(message, { confirmOnly: false });
+    }
+
+    /****************** フルスクリーン ******************/
+    function enterFullscreen() {
+      document.documentElement.requestFullscreen().then(() => {
+        navigateTo(1);
+      });
+    }
+
+    /****************** ステップ切り替え ******************/
+    function navigateTo(step) {
+      document.querySelectorAll('.step').forEach(el => el.style.display = 'none');
+      document.getElementById(`step${step}`).style.display = 'block';
+      currentStep = step;
+      if (step === 3) {
+        circleTestStartTime = performance.now();
+        initShapeCanvas();
+      }
+    }
+
+    /****************** キャリブレーション ******************/
+    class CalibrationCanvas {
+      constructor(id) {
+        this.canvas = document.getElementById(id);
+        this.ctx = this.canvas.getContext('2d');
+        this.lines = [];
+        this.isDrawing = false;
+        this.initEvents();
+      }
+      initEvents() {
+        this.canvas.addEventListener('mousedown', async e => await this.startDrawing(e));
+        this.canvas.addEventListener('mousemove', e => this.draw(e));
+        this.canvas.addEventListener('mouseup', () => this.stopDrawing());
+      }
+      async startDrawing(e) {
+        if (currentStep === 1 && !document.getElementById('rulerCheck').checked) {
+          await customAlert('定規のチェックボックスにチェックを入れてください');
+          return;
+        }
+        const pos = this.getPosition(e);
+        this.isDrawing = true;
+        this.lines = [{ x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y }];
+      }
+      draw(e) {
+        if (!this.isDrawing) return;
+        const pos = this.getPosition(e);
+        this.lines[0].x2 = pos.x;
+        this.lines[0].y2 = pos.y;
+        this.render();
+      }
+      stopDrawing() {
+        this.isDrawing = false;
+        this.render();
+      }
+      getPosition(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      }
+      render() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.lines.forEach(line => {
+          this.ctx.beginPath();
+          this.ctx.moveTo(line.x1, line.y1);
+          this.ctx.lineTo(line.x2, line.y2);
+          this.ctx.strokeStyle = '#2c3e50';
+          this.ctx.lineWidth = 2;
+          this.ctx.stroke();
+        });
+      }
+      getLineLength() {
+        return this.lines.length ? Math.hypot(this.lines[0].x2 - this.lines[0].x1, this.lines[0].y2 - this.lines[0].y1) : 0;
+      }
+      clear() {
+        this.lines = [];
+        this.render();
+      }
+    }
+    const calib1 = new CalibrationCanvas('calibCanvas1');
+    const calib2 = new CalibrationCanvas('calibCanvas2');
+    // キャリブレーション画面のリセット：1回目は単純にクリア、2回目はリセットして1回目に戻る
+    document.getElementById('clearCalib1').addEventListener('click', () => {
+      calib1.clear();
+      calibResults[0] = null;
+    });
+    document.getElementById('clearCalib2').addEventListener('click', () => {
+      calib2.clear();
+      calibResults[1] = null;
+      navigateTo(1);
+    });
+    document.getElementById('confirmCalib1').addEventListener('click', async () => {
+      if (calib1.getLineLength() < 10) {
+        await customAlert('キャリブレーション線を描いてください');
+        return;
+      }
+      calibResults[0] = calib1.getLineLength();
+      navigateTo(2);
+    });
+    document.getElementById('confirmCalib2').addEventListener('click', async () => {
+      const len = calib2.getLineLength();
+      if (len < 10) {
+        await customAlert('キャリブレーション線を描いてください');
+        return;
+      }
+      calibResults[1] = len;
+      const min = Math.min(...calibResults);
+      const max = Math.max(...calibResults);
+      if ((min / max) < 0.95) {
+        await customAlert('2回の計測値の一致度が95%未満です。再描画してください');
+        calib2.clear();
+        return;
+      }
+      pxToMm = 20 / ((calibResults[0] + calibResults[1]) / 2);
+      navigateTo(3);
+    });
+
+    /****************** リセット（自由手描） ******************/
+    function resetCircleCanvas() {
+      shapes = [];
+      currentShape = null;
+      isDrawing = false;
+      actionType = null;
+      selectedShape = null;
+      document.getElementById('labelSelector').value = '';
+      currentLabel = '';
+      updateShapeDisplay && updateShapeDisplay();
+    }
+
+    /****************** 自由手描図形の実装 ******************/
+    function initShapeCanvas() {
+      const canvas = document.getElementById('circleCanvas');
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = CANVAS_SIZE * dpr;
+      canvas.height = CANVAS_SIZE * dpr;
+      ctx.scale(dpr, dpr);
+      let mouseDownPos = null;
+
+      // 更新画布显示函数
+      updateShapeDisplay = function updateDisplay() {
+        ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+        // 绘制正在绘制的图形
+        if (isDrawing && currentShape && currentShape.points.length > 0) {
+          ctx.beginPath();
+          ctx.moveTo(currentShape.points[0].x, currentShape.points[0].y);
+          for (let i = 1; i < currentShape.points.length; i++) {
+            ctx.lineTo(currentShape.points[i].x, currentShape.points[i].y);
+          }
+          ctx.strokeStyle = '#3498db';
+          ctx.setLineDash([5, 3]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+        // 绘制已完成的图形
+        shapes.forEach(shape => {
+          if (shape.points && shape.points.length > 0) {
+            ctx.beginPath();
+            ctx.moveTo(shape.points[0].x, shape.points[0].y);
+            for (let i = 1; i < shape.points.length; i++) {
+              ctx.lineTo(shape.points[i].x, shape.points[i].y);
+            }
+            ctx.closePath();
+            ctx.strokeStyle = '#2c3e50';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            // 根据标记显示标签（在外接矩形中心）
+            if (shape.showLabel && shape.centroid) {
+              ctx.fillStyle = '#2c3e50';
+              ctx.font = '16px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(shape.label, shape.centroid.x, shape.centroid.y);
+            }
+          }
+        });
+        document.getElementById('circleCounter').textContent = `作成済み：${shapes.length}/3`;
+      };
+
+      function getPosition(e) {
+        const rect = canvas.getBoundingClientRect();
+        return { x: (e.clientX - rect.left) * (CANVAS_SIZE / rect.width), y: (e.clientY - rect.top) * (CANVAS_SIZE / rect.height) };
+      }
+
+      // --- 左键按下（仅处理左键） ---
+      canvas.addEventListener('mousedown', e => {
+        if (e.button !== 0) return; // 忽略非左键点击
+        const pos = getPosition(e);
+        mouseDownPos = { x: pos.x, y: pos.y };
+        // 检测是否点击到已有图形内部
+        selectedShape = shapes.find(shape => isPointInPolygon(pos, shape.points));
+        if (selectedShape) {
+          // 进入移动模式
+          actionType = 'move';
+          selectedShape.initialMousePos = { x: pos.x, y: pos.y };
+          selectedShape.originalPoints = JSON.parse(JSON.stringify(selectedShape.points));
+          selectedShape.moveStartTime = performance.now();
+          return;
+        }
+        // 新建图形：仅当已选标签且当前图形数少于3
+        if (currentLabel && shapes.length < 3) {
+          isDrawing = true;
+          currentShape = { 
+            label: currentLabel, 
+            points: [], 
+            positions: [], 
+            startTime: performance.now() 
+          };
+          // 记录反応時間：从标签选择到绘图开始
+          currentShape.reactionTime = currentShape.startTime - labelSelectionTime;
+        }
+      });
+
+      // --- 鼠标移动 ---
+      canvas.addEventListener('mousemove', e => {
+        const pos = getPosition(e);
+        if (isDrawing && currentShape) {
+          currentShape.points.push({ x: pos.x, y: pos.y });
+          currentShape.positions.push({ x: pos.x, y: pos.y, time: performance.now() });
+          updateShapeDisplay();
+          return;
+        }
+        if (actionType === 'move' && selectedShape) {
+          const dx = pos.x - selectedShape.initialMousePos.x;
+          const dy = pos.y - selectedShape.initialMousePos.y;
+          selectedShape.points = selectedShape.originalPoints.map(p => ({ x: p.x + dx, y: p.y + dy }));
+          const bbox = computeBoundingBox(selectedShape.points);
+          selectedShape.centroid = { x: (bbox.minX + bbox.maxX) / 2, y: (bbox.minY + bbox.maxY) / 2 };
+          updateShapeDisplay();
+        }
+      });
+
+      // --- 左键抬起 ---
+      canvas.addEventListener('mouseup', e => {
+        if (e.button !== 0) return;
+        const pos = getPosition(e);
+        const clickDisplacement = mouseDownPos ? Math.hypot(pos.x - mouseDownPos.x, pos.y - mouseDownPos.y) : Infinity;
+        // 如果鼠标移动很小，则视为点击操作：切换标签显示状态
+        if (clickDisplacement < 5 && selectedShape) {
+          selectedShape.showLabel = !selectedShape.showLabel;
+          updateShapeDisplay();
+          actionType = null;
+          selectedShape = null;
+          mouseDownPos = null;
+          return;
+        }
+        if (isDrawing && currentShape) {
+          currentShape.endTime = performance.now();
+          currentShape.drawingTime = currentShape.endTime - currentShape.startTime; // 总绘制时间（ms）
+          if (currentShape.points.length < 3) {
+            isDrawing = false;
+            currentShape = null;
+            updateShapeDisplay();
+            return;
+          }
+          // 计算外接矩形
+          const bbox = computeBoundingBox(currentShape.points);
+          if (bbox.width < 10 || bbox.height < 10) {
+            isDrawing = false;
+            currentShape = null;
+            customAlert('図形が小さすぎます。もう一度描いてください。');
+            updateShapeDisplay();
+            return;
+          }
+          // 采用外接矩形中心作为标签显示位置
+          currentShape.centroid = { x: (bbox.minX + bbox.maxX) / 2, y: (bbox.minY + bbox.maxY) / 2 };
+          // 计算面积及等価半径（可选）
+          const area = computePolygonArea(currentShape.points);
+          currentShape.area = area;
+          currentShape.eqRadius = Math.sqrt(area / Math.PI);
+          currentShape.closed = true;
+          // 结束绘图时默认不显示标签
+          currentShape.showLabel = false;
+          shapes.push(currentShape);
+          isDrawing = false;
+          currentShape = null;
+          // 绘制完成后重置下拉菜单（确保每个ラベル只能使用一次）
+          document.getElementById('labelSelector').value = '';
+          currentLabel = '';
+        }
+        if (actionType === 'move' && selectedShape) {
+          const moveEndTime = performance.now();
+          const dx = pos.x - selectedShape.initialMousePos.x;
+          const dy = pos.y - selectedShape.initialMousePos.y;
+          const displacement = Math.hypot(dx, dy);
+          const duration = moveEndTime - selectedShape.moveStartTime;
+          selectedShape.totalDistance = displacement;
+          selectedShape.averageSpeed = duration > 0 ? displacement / duration : 0;
+          selectedShape.maxSpeed = selectedShape.averageSpeed;
+        }
+        actionType = null;
+        selectedShape = null;
+        mouseDownPos = null;
+        updateShapeDisplay();
+      });
+
+      // --- 右键点击删除图形 ---
+      canvas.addEventListener('contextmenu', e => {
+        e.preventDefault();
+        const pos = getPosition(e);
+        const shapeToDelete = shapes.find(shape => isPointInPolygon(pos, shape.points));
+        if (shapeToDelete) {
+          shapes = shapes.filter(s => s !== shapeToDelete);
+          updateShapeDisplay();
+        }
+      });
+
+      // 下拉菜单事件：确保每个ラベル仅能使用一次，并记录标签选择时间
+      document.getElementById('labelSelector').addEventListener('change', async e => {
+        currentLabel = e.target.value;
+        if (currentLabel) {
+          labelSelectionTime = performance.now();
+        }
+        if (shapes.some(shape => shape.label === currentLabel)) {
+          await customAlert('このラベルは既に使用されています');
+          e.target.value = '';
+          currentLabel = '';
+        }
+      });
+    }
+
+    /****************** CSV出力と各種計算 ******************/
+    // 計算時間関連性得点函数：
+// 条件说明：
+// 1. 若 d ≤ |r₁ - r₂| + tol，则认为一图完全包含另一图，得6分；
+// 2. 若 d 在 r₁ + r₂ ± tol 的范围内，则认为图形边缘相接，得2分；
+// 3. 若 d > r₁ + r₂ + tol，则得0分（相对独立）；
+// 4. 其他情况（即部分重叠）得4分。
+    function computeTemporalRelatedness(r1, r2, d) {
+      const tol = 1.0; // 容差1mm
+      if (d <= Math.abs(r1 - r2) + tol) {
+        return 6;
+      } else if (d >= r1 + r2 - tol && d <= r1 + r2 + tol) {
+        return 2;
+      } else if (d > r1 + r2 + tol) {
+        return 0;
+      } else {
+        return 4;
+      }
+    }
+    async function handleExport() {
+      if (shapes.length !== 3) {
+        await customAlert('3つの図形を作成してください');
+        return;
+      }
+      const confirmResult = await customConfirm('この結果を出力しますか？');
+      if (!confirmResult) return;
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      }
+      updateShapeDisplay && updateShapeDisplay();
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+      // 按照标签找出对应图形
+      const shapePast = shapes.find(s => s.label === '過去');
+      const shapeNow = shapes.find(s => s.label === '現在');
+      const shapeFuture = shapes.find(s => s.label === '未来');
+      const dPastNow = shapePast && shapeNow ? Math.hypot(shapePast.centroid.x - shapeNow.centroid.x, shapePast.centroid.y - shapeNow.centroid.y) * pxToMm : '0';
+      const dNowFuture = shapeNow && shapeFuture ? Math.hypot(shapeNow.centroid.x - shapeFuture.centroid.x, shapeNow.centroid.y - shapeFuture.centroid.y) * pxToMm : '0';
+      const dPastFuture = shapePast && shapeFuture ? Math.hypot(shapePast.centroid.x - shapeFuture.centroid.x, shapePast.centroid.y - shapeFuture.centroid.y) * pxToMm : '0';
+      // 使用等価半径计算时间関連性
+      const rPast = shapePast ? shapePast.eqRadius * pxToMm : 0;
+      const rNow = shapeNow ? shapeNow.eqRadius * pxToMm : 0;
+      const rFuture = shapeFuture ? shapeFuture.eqRadius * pxToMm : 0;
+      const trPastNow = shapePast && shapeNow ? computeTemporalRelatedness(rPast, rNow, dPastNow) : '0';
+      const trNowFuture = shapeNow && shapeFuture ? computeTemporalRelatedness(rNow, rFuture, dNowFuture) : '0';
+      const trPastFuture = shapePast && shapeFuture ? computeTemporalRelatedness(rPast, rFuture, dPastFuture) : '0';
+      const totalTemporalRelatedness = (parseFloat(trPastNow) || 0) + (parseFloat(trNowFuture) || 0) + (parseFloat(trPastFuture) || 0);
+      // 時間優位性：比较三个图形的面积（本例用面积值计算），两两比较，面积较大的得2分
+      let pastDominance = 0, nowDominance = 0, futureDominance = 0;
+      if (shapePast && shapeNow) {
+        if (shapePast.area > shapeNow.area) {
+          pastDominance += 2;
+        } else if (shapeNow.area > shapePast.area) {
+          nowDominance += 2;
+        }
+      }
+      if (shapePast && shapeFuture) {
+        if (shapePast.area > shapeFuture.area) {
+          pastDominance += 2;
+        } else if (shapeFuture.area > shapePast.area) {
+          futureDominance += 2;
+        }
+      }
+      if (shapeNow && shapeFuture) {
+        if (shapeNow.area > shapeFuture.area) {
+          nowDominance += 2;
+        } else if (shapeFuture.area > shapeNow.area) {
+          futureDominance += 2;
+        }
+      }
+      const overallTaskTime = performance.now() - circleTestStartTime;
+      const csvData = shapes.map((s, i) => ({
+        ラベル: s.label,
+        等価半径_mm: s.eqRadius ? (s.eqRadius * pxToMm).toFixed(2) : '0',
+        面積_mm2: s.area ? s.area.toFixed(2) : '0',
+        重心X_mm: s.centroid ? (s.centroid.x * pxToMm).toFixed(2) : '0',
+        重心Y_mm: s.centroid ? (s.centroid.y * pxToMm).toFixed(2) : '0',
+        描画順: i + 1,
+        反応時間_ms: s.reactionTime ? s.reactionTime.toFixed(2) : '0',
+        描画時間_ms: s.drawingTime ? s.drawingTime.toFixed(2) : '0',
+        総移動距離_px: s.totalDistance !== undefined ? s.totalDistance.toFixed(2) : '0',
+        平均速度_px_ms: s.averageSpeed !== undefined ? s.averageSpeed.toFixed(4) : '0',
+        最大速度_px_ms: s.maxSpeed !== undefined ? s.maxSpeed.toFixed(4) : '0'
+      }));
+      const header = 'ラベル,等価半径(mm),面積(mm²),重心X(mm),重心Y(mm),描画順,反応時間(ms),描画時間(ms),総移動距離(px),平均速度(px/ms),最大速度(px/ms)';
+      const csvRows = csvData.map(d => `${d.ラベル},${d.等価半径_mm},${d.面積_mm2},${d.重心X_mm},${d.重心Y_mm},${d.描画順},${d.反応時間_ms},${d.描画時間_ms},${d.総移動距離_px},${d.平均速度_px_ms},${d.最大速度_px_ms}`);
+      const summaryRows = [
+        `全体タスク時間(ms):,${overallTaskTime.toFixed(2)}`,
+        `時間関連性_過去-現在,時間関連性_現在-未来,時間関連性_過去-未来,総時間関連性:,${trPastNow},${trNowFuture},${trPastFuture},${totalTemporalRelatedness}`,
+        `時間優位性_過去,時間優位性_現在,時間優位性_未来:,${pastDominance},${nowDominance},${futureDominance}`
+      ];
+      const csvContent = [header, ...csvRows, '', ...summaryRows].join('\n');
+      const csvLink = document.createElement('a');
+      csvLink.href = URL.createObjectURL(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }));
+      csvLink.download = `サークルテスト_${timestamp}.csv`;
+      csvLink.click();
+      const canvasElem = await html2canvas(document.querySelector('.draw-container'), { scale: 2, useCORS: true });
+      const imgLink = document.createElement('a');
+      imgLink.href = canvasElem.toDataURL('image/jpeg', 0.9);
+      imgLink.download = `サークルテスト_${timestamp}.jpg`;
+      imgLink.click();
+      updateShapeDisplay && updateShapeDisplay();
+    }
+  </script>
+</body>
+</html>
