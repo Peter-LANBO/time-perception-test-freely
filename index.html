@@ -26,6 +26,9 @@
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; }
     .modal-content { background: #fff; padding: 20px 30px; border-radius: 8px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
     .modal-content p { margin-bottom: 20px; font-size: 16px; color: #2c3e50; }
+    /* 量表项样式 */
+    .questionnaire-item { margin-bottom: 15px; }
+    .questionnaire-item p { margin: 5px 0; }
   </style>
 </head>
 <body>
@@ -60,7 +63,6 @@
       <div class="canvas-box">
         <canvas id="calibCanvas2" width="800" height="500"></canvas>
       </div>
-      <!-- リセット時、2回目は1回目に戻る -->
       <button class="btn" id="clearCalib2">リセット（1回目に戻る）</button>
       <button class="btn" id="confirmCalib2">確定</button>
     </div>
@@ -69,7 +71,6 @@
       <h2>【ステップ3】サークルテスト（自由手描）</h2>
       <div class="a4-sheet">
         <div class="instruction-panel">
-          <!-- 修改后的说明文字 -->
           <p>
             以下の指示を詳しく読んで、回答してください：<br>
             過去、現在、未来が円で表されると考えて、あなた自身の過去、現在、未来の関係について、あなたの見方を最もあらわすように、枠の中で自由に3つの円を書いてください。描き方は自由です。円のサイズと位置を変えてもかまいません。<br>
@@ -94,16 +95,10 @@
             <span class="counter" id="circleCounter">作成済み：0/3</span>
           </div>
           <div class="control-panel">
-            <button class="btn" onclick="handleExport()">結果出力</button>
             <button class="btn" onclick="resetCircleCanvas()">リセット</button>
           </div>
-          <!-- 修改后的结果输出说明 -->
-          <p style="font-size: 15px; color: #2c3e50; margin-top: 15px;">
-            ※ 結果出力について：図の作成が完了したら、左下の【結果出力】ボタンをクリックしてください。<br>
-            すると、<strong>CSVファイルとJPG画像の2つのファイルがダウンロード</strong>されます。<br>
-            ダウンロードされたファイルは、必ず<strong>メール本文に学生番号の後8桁</strong>を記入の上、<br>
-            指定のメールアドレス <strong>wohanhailong1993@outlook.com へ送信</strong>してください。
-          </p>
+          <!-- 导航至 Step4 -->
+          <button class="btn" onclick="navigateTo(4)">次へ</button>
         </div>
         <div>
           <div class="canvas-label-outside">キャンバス</div>
@@ -112,6 +107,142 @@
           </div>
         </div>
       </div>
+    </div>
+    <!-- Step 4: ZTPI短縮版 -->
+    <div id="step4" class="step" style="display:none;">
+      <h2>【ステップ4】ZTPI短縮版</h2>
+      <p>以下の項目が『あなた自身にどの程度当てはまるか』を、5段階でお答えください。正解や不正解はありませんので、直感的に最も近いと思う内容を選んでください。</p>
+      <form id="questionnaireForm">
+        <div class="questionnaire-item">
+          <p><strong>1. 過去に起きた嫌な出来事について考えることがある</strong></p>
+          <label><input type="radio" name="item1" value="1" required> 全く当てはまらない</label>
+          <label><input type="radio" name="item1" value="2"> 当てはまらない</label>
+          <label><input type="radio" name="item1" value="3"> どちらでも言えない</label>
+          <label><input type="radio" name="item1" value="4"> 当てはまる</label>
+          <label><input type="radio" name="item1" value="5"> 非常に当てはまる</label>
+        </div>
+        <div class="questionnaire-item">
+          <p><strong>2. 過去のつらい経験が、繰り返し頭に浮かぶ</strong></p>
+          <label><input type="radio" name="item2" value="1" required> 全く当てはまらない</label>
+          <label><input type="radio" name="item2" value="2"> 当てはまらない</label>
+          <label><input type="radio" name="item2" value="3"> どちらでも言えない</label>
+          <label><input type="radio" name="item2" value="4"> 当てはまる</label>
+          <label><input type="radio" name="item2" value="5"> 非常に当てはまる</label>
+        </div>
+        <div class="questionnaire-item">
+          <p><strong>3. 若い頃の嫌なイメージを忘れることは難しい</strong></p>
+          <label><input type="radio" name="item3" value="1" required> 全く当てはまらない</label>
+          <label><input type="radio" name="item3" value="2"> 当てはまらない</label>
+          <label><input type="radio" name="item3" value="3"> どちらでも言えない</label>
+          <label><input type="radio" name="item3" value="4"> 当てはまる</label>
+          <label><input type="radio" name="item3" value="5"> 非常に当てはまる</label>
+        </div>
+        <div class="questionnaire-item">
+          <p><strong>4. 人生の刺激を得るために冒険をする</strong></p>
+          <label><input type="radio" name="item4" value="1" required> 全く当てはまらない</label>
+          <label><input type="radio" name="item4" value="2"> 当てはまらない</label>
+          <label><input type="radio" name="item4" value="3"> どちらでも言えない</label>
+          <label><input type="radio" name="item4" value="4"> 当てはまる</label>
+          <label><input type="radio" name="item4" value="5"> 非常に当てはまる</label>
+        </div>
+        <div class="questionnaire-item">
+          <p><strong>5. 人生に刺激は重要だ</strong></p>
+          <label><input type="radio" name="item5" value="1" required> 全く当てはまらない</label>
+          <label><input type="radio" name="item5" value="2"> 当てはまらない</label>
+          <label><input type="radio" name="item5" value="3"> どちらでも言えない</label>
+          <label><input type="radio" name="item5" value="4"> 当てはまる</label>
+          <label><input type="radio" name="item5" value="5"> 非常に当てはまる</label>
+        </div>
+        <div class="questionnaire-item">
+          <p><strong>6. 危険をおそれないからこそ、人生は退屈でなくなる</strong></p>
+          <label><input type="radio" name="item6" value="1" required> 全く当てはまらない</label>
+          <label><input type="radio" name="item6" value="2"> 当てはまらない</label>
+          <label><input type="radio" name="item6" value="3"> どちらでも言えない</label>
+          <label><input type="radio" name="item6" value="4"> 当てはまる</label>
+          <label><input type="radio" name="item6" value="5"> 非常に当てはまる</label>
+        </div>
+        <div class="questionnaire-item">
+          <p><strong>7. 人生の進路は、自分ではどうしようもない力によって決められている</strong></p>
+          <label><input type="radio" name="item7" value="1" required> 全く当てはまらない</label>
+          <label><input type="radio" name="item7" value="2"> 当てはまらない</label>
+          <label><input type="radio" name="item7" value="3"> どちらでも言えない</label>
+          <label><input type="radio" name="item7" value="4"> 当てはまる</label>
+          <label><input type="radio" name="item7" value="5"> 非常に当てはまる</label>
+        </div>
+        <div class="questionnaire-item">
+          <p><strong>8. どうしようもないことなので、将来について心配しても仕方がない</strong></p>
+          <label><input type="radio" name="item8" value="1" required> 全く当てはまらない</label>
+          <label><input type="radio" name="item8" value="2"> 当てはまらない</label>
+          <label><input type="radio" name="item8" value="3"> どちらでも言えない</label>
+          <label><input type="radio" name="item8" value="4"> 当てはまる</label>
+          <label><input type="radio" name="item8" value="5"> 非常に当てはまる</label>
+        </div>
+        <div class="questionnaire-item">
+          <p><strong>9. 物事は変わるので、将来の計画を立てるのは実際には不可能だ</strong></p>
+          <label><input type="radio" name="item9" value="1" required> 全く当てはまらない</label>
+          <label><input type="radio" name="item9" value="2"> 当てはまらない</label>
+          <label><input type="radio" name="item9" value="3"> どちらでも言えない</label>
+          <label><input type="radio" name="item9" value="4"> 当てはまる</label>
+          <label><input type="radio" name="item9" value="5"> 非常に当てはまる</label>
+        </div>
+        <div class="questionnaire-item">
+          <p><strong>10. 昔のことを考えるのは楽しい</strong></p>
+          <label><input type="radio" name="item10" value="1" required> 全く当てはまらない</label>
+          <label><input type="radio" name="item10" value="2"> 当てはまらない</label>
+          <label><input type="radio" name="item10" value="3"> どちらでも言えない</label>
+          <label><input type="radio" name="item10" value="4"> 当てはまる</label>
+          <label><input type="radio" name="item10" value="5"> 非常に当てはまる</label>
+        </div>
+        <div class="questionnaire-item">
+          <p><strong>11. 楽しかった思い出が、すぐに心に浮かぶ</strong></p>
+          <label><input type="radio" name="item11" value="1" required> 全く当てはまらない</label>
+          <label><input type="radio" name="item11" value="2"> 当てはまらない</label>
+          <label><input type="radio" name="item11" value="3"> どちらでも言えない</label>
+          <label><input type="radio" name="item11" value="4"> 当てはまる</label>
+          <label><input type="radio" name="item11" value="5"> 非常に当てはまる</label>
+        </div>
+        <div class="questionnaire-item">
+          <p><strong>12. 懐かしい光景、音、匂いによって、幼い頃のよい思い出がよみがえることがよくある</strong></p>
+          <label><input type="radio" name="item12" value="1" required> 全く当てはまらない</label>
+          <label><input type="radio" name="item12" value="2"> 当てはまらない</label>
+          <label><input type="radio" name="item12" value="3"> どちらでも言えない</label>
+          <label><input type="radio" name="item12" value="4"> 当てはまる</label>
+          <label><input type="radio" name="item12" value="5"> 非常に当てはまる</label>
+        </div>
+        <div class="questionnaire-item">
+          <p><strong>13. コツコツと取り組んで時間通りに課題を終了する</strong></p>
+          <label><input type="radio" name="item13" value="1" required> 全く当てはまらない</label>
+          <label><input type="radio" name="item13" value="2"> 当てはまらない</label>
+          <label><input type="radio" name="item13" value="3"> どちらでも言えない</label>
+          <label><input type="radio" name="item13" value="4"> 当てはまる</label>
+          <label><input type="radio" name="item13" value="5"> 非常に当てはまる</label>
+        </div>
+        <div class="questionnaire-item">
+          <p><strong>14. やるべきことがあるとき、誘惑に耐えることができる</strong></p>
+          <label><input type="radio" name="item14" value="1" required> 全く当てはまらない</label>
+          <label><input type="radio" name="item14" value="2"> 当てはまらない</label>
+          <label><input type="radio" name="item14" value="3"> どちらでも言えない</label>
+          <label><input type="radio" name="item14" value="4"> 当てはまる</label>
+          <label><input type="radio" name="item14" value="5"> 非常に当てはまる</label>
+        </div>
+        <div class="questionnaire-item">
+          <p><strong>15. 夜遊びに行くことよりも、明日までにやるべきことや必要なことを終える方が大切だ</strong></p>
+          <label><input type="radio" name="item15" value="1" required> 全く当てはまらない</label>
+          <label><input type="radio" name="item15" value="2"> 当てはまらない</label>
+          <label><input type="radio" name="item15" value="3"> どちらでも言えない</label>
+          <label><input type="radio" name="item15" value="4"> 当てはまる</label>
+          <label><input type="radio" name="item15" value="5"> 非常に当てはまる</label>
+        </div>
+        <div class="questionnaire-item">
+          <p><strong>16. 友人や上司・教師などに対する義務は遅れずに果たす</strong></p>
+          <label><input type="radio" name="item16" value="1" required> 全く当てはまらない</label>
+          <label><input type="radio" name="item16" value="2"> 当てはまらない</label>
+          <label><input type="radio" name="item16" value="3"> どちらでも言えない</label>
+          <label><input type="radio" name="item16" value="4"> 当てはまる</label>
+          <label><input type="radio" name="item16" value="5"> 非常に当てはまる</label>
+        </div>
+      </form>
+      <button class="btn" id="submitQuestionnaire">送信</button>
     </div>
   </div>
   <div id="modalOverlay" class="modal-overlay">
@@ -525,7 +656,7 @@
         }
       });
 
-      // 下拉菜单事件：确保每个ラベル仅能使用一次，并记录标签选择时间
+      // 下拉菜单事件：确保每个标签仅能使用一次，并记录标签选择时间
       document.getElementById('labelSelector').addEventListener('change', async e => {
         currentLabel = e.target.value;
         if (currentLabel) {
@@ -541,11 +672,11 @@
 
     /****************** CSV出力と各種計算 ******************/
     // 計算時間関連性得点函数：
-// 条件说明：
-// 1. 若 d ≤ |r₁ - r₂| + tol，则认为一图完全包含另一图，得6分；
-// 2. 若 d 在 r₁ + r₂ ± tol 的范围内，则认为图形边缘相接，得2分；
-// 3. 若 d > r₁ + r₂ + tol，则得0分（相对独立）；
-// 4. 其他情况（即部分重叠）得4分。
+    // 条件说明：
+    // 1. 若 d ≤ |r₁ - r₂| + tol，则认为一图完全包含另一图，得6分；
+    // 2. 若 d 在 r₁ + r₂ ± tol 的范围内，则认为图形边缘相接，得2分；
+    // 3. 若 d > r₁ + r₂ + tol，则得0分（相对独立）；
+    // 4. 其他情况（即部分重叠）得4分。
     function computeTemporalRelatedness(r1, r2, d) {
       const tol = 1.0; // 容差1mm
       if (d <= Math.abs(r1 - r2) + tol) {
@@ -609,27 +740,44 @@
         }
       }
       const overallTaskTime = performance.now() - circleTestStartTime;
-      const csvData = shapes.map((s, i) => ({
-        ラベル: s.label,
-        等価半径_mm: s.eqRadius ? (s.eqRadius * pxToMm).toFixed(2) : '0',
-        面積_mm2: s.area ? s.area.toFixed(2) : '0',
-        重心X_mm: s.centroid ? (s.centroid.x * pxToMm).toFixed(2) : '0',
-        重心Y_mm: s.centroid ? (s.centroid.y * pxToMm).toFixed(2) : '0',
-        描画順: i + 1,
-        反応時間_ms: s.reactionTime ? s.reactionTime.toFixed(2) : '0',
-        描画時間_ms: s.drawingTime ? s.drawingTime.toFixed(2) : '0',
-        総移動距離_px: s.totalDistance !== undefined ? s.totalDistance.toFixed(2) : '0',
-        平均速度_px_ms: s.averageSpeed !== undefined ? s.averageSpeed.toFixed(4) : '0',
-        最大速度_px_ms: s.maxSpeed !== undefined ? s.maxSpeed.toFixed(4) : '0'
-      }));
-      const header = 'ラベル,等価半径(mm),面積(mm²),重心X(mm),重心Y(mm),描画順,反応時間(ms),描画時間(ms),総移動距離(px),平均速度(px/ms),最大速度(px/ms)';
-      const csvRows = csvData.map(d => `${d.ラベル},${d.等価半径_mm},${d.面積_mm2},${d.重心X_mm},${d.重心Y_mm},${d.描画順},${d.反応時間_ms},${d.描画時間_ms},${d.総移動距離_px},${d.平均速度_px_ms},${d.最大速度_px_ms}`);
-      const summaryRows = [
-        `全体タスク時間(ms):,${overallTaskTime.toFixed(2)}`,
-        `時間関連性_過去-現在,時間関連性_現在-未来,時間関連性_過去-未来,総時間関連性:,${trPastNow},${trNowFuture},${trPastFuture},${totalTemporalRelatedness}`,
-        `時間優位性_過去,時間優位性_現在,時間優位性_未来:,${pastDominance},${nowDominance},${futureDominance}`
-      ];
-      const csvContent = [header, ...csvRows, '', ...summaryRows].join('\n');
+      // 将所有数据整理到一个对象中，使用图形的 label（過去、現在、未来）作为前缀
+      const dataRow = {};
+      shapes.forEach(s => {
+          const prefix = s.label; // 使用“過去”、“現在”、“未来”作为前缀
+          dataRow[`${prefix}等価半径_mm`] = s.eqRadius ? (s.eqRadius * pxToMm).toFixed(2) : '0';
+          dataRow[`${prefix}面積_mm2`] = s.area ? s.area.toFixed(2) : '0';
+          dataRow[`${prefix}重心X_mm`] = s.centroid ? (s.centroid.x * pxToMm).toFixed(2) : '0';
+          dataRow[`${prefix}重心Y_mm`] = s.centroid ? (s.centroid.y * pxToMm).toFixed(2) : '0';
+          dataRow[`${prefix}描画順`] = s.label;
+          dataRow[`${prefix}反応時間_ms`] = s.reactionTime ? s.reactionTime.toFixed(2) : '0';
+          dataRow[`${prefix}描画時間_ms`] = s.drawingTime ? s.drawingTime.toFixed(2) : '0';
+          dataRow[`${prefix}総移動距離_px`] = s.totalDistance !== undefined ? s.totalDistance.toFixed(2) : '0';
+          dataRow[`${prefix}平均速度_px_ms`] = s.averageSpeed !== undefined ? s.averageSpeed.toFixed(4) : '0';
+          dataRow[`${prefix}最大速度_px_ms`] = s.maxSpeed !== undefined ? s.maxSpeed.toFixed(4) : '0';
+      });
+      dataRow['全体タスク時間_ms'] = overallTaskTime.toFixed(2);
+      dataRow['時間関連性_過去-現在'] = trPastNow;
+      dataRow['時間関連性_現在-未来'] = trNowFuture;
+      dataRow['時間関連性_過去-未来'] = trPastFuture;
+      dataRow['総時間関連性'] = totalTemporalRelatedness;
+      dataRow['時間優位性_過去'] = pastDominance;
+      dataRow['時間優位性_現在'] = nowDominance;
+      dataRow['時間優位性_未来'] = futureDominance;
+
+      // 如果已添加量表（Step4）的得分，亦将其添加到数据中
+      if (window.questionnaireScores) {
+          Object.keys(window.questionnaireScores).forEach(key => {
+             dataRow[key] = window.questionnaireScores[key];
+          });
+      }
+
+      // 生成单行 CSV（标题行 + 数据行）
+      const headers = Object.keys(dataRow);
+      const csvRow = headers.map(h => dataRow[h]).join(',');
+      const csvHeader = headers.join(',');
+      const csvContent = `${csvHeader}\n${csvRow}`;
+
+      // 触发 CSV 下载
       const csvLink = document.createElement('a');
       csvLink.href = URL.createObjectURL(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }));
       csvLink.download = `サークルテスト_${timestamp}.csv`;
@@ -641,6 +789,35 @@
       imgLink.click();
       updateShapeDisplay && updateShapeDisplay();
     }
+
+    /****************** 量表（Step4）处理 ******************/
+    document.getElementById('submitQuestionnaire').addEventListener('click', () => {
+      const form = document.getElementById('questionnaireForm');
+      const formData = new FormData(form);
+      let scores = {};
+      // 检查所有题目是否均有作答
+      for (let i = 1; i <= 16; i++) {
+        const value = formData.get(`item${i}`);
+        if (!value) {
+          alert(`全ての項目に回答してください。項目${i}が未回答です。`);
+          return;
+        }
+        scores[`item${i}`] = parseInt(value, 10);
+      }
+      // 计算各维度得分
+      const questionnaireScores = {
+        '過去否定': scores.item1 + scores.item2 + scores.item3,      // 题目1-3
+        '現在快楽': scores.item4 + scores.item5 + scores.item6,         // 题目4-6
+        '現在運命': scores.item7 + scores.item8 + scores.item9,         // 题目7-9
+        '過去肯定': scores.item10 + scores.item11 + scores.item12,       // 题目10-12
+        '未来': scores.item13 + scores.item14 + scores.item15 + scores.item16  // 题目13-16
+      };
+      // 将量表得分保存为全局变量，后续在 CSV 中引用
+      window.questionnaireScores = questionnaireScores;
+      alert('量表の回答が記録されました。');
+      // 调用 CSV 导出函数
+      handleExport();
+    });
   </script>
 </body>
 </html>
